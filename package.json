@@ -1,0 +1,24 @@
+{
+  "name": "page-to-ai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "popup.js",
+  "scripts": {
+    "build": "node build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apostx/page-to-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/apostx/page-to-ai/issues"
+  },
+  "homepage": "https://github.com/apostx/page-to-ai#readme",
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0"
+  }
+}

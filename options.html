@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Page to AI - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Page to AI Settings</h1>
+
+    <div class="profile-bar">
+      <label for="profileSelect">Profile</label>
+      <select id="profileSelect"></select>
+      <button type="button" id="add-profile-btn" class="icon-btn" title="New profile">+</button>
+      <button type="button" id="delete-profile-btn" class="icon-btn danger" title="Delete profile">Delete</button>
+    </div>
+
+    <div class="field">
+      <label for="targetUrl">Target AI URL</label>
+      <input type="url" id="targetUrl" placeholder="https://claude.ai/new">
+    </div>
+
+    <div class="field">
+      <label for="prompt">Prompt Template</label>
+      <textarea id="prompt" rows="3" placeholder="Please analyze the attached document..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Extraction Mode</label>
+      <div class="radio-group">
+        <label><input type="radio" name="extractionMode" value="full" checked> Full Page</label>
+        <label><input type="radio" name="extractionMode" value="smart"> Smart (article only)</label>
+      </div>
+    </div>
+
+    <details>
+      <summary>Advanced Settings</summary>
+      <div class="advanced">
+        <div class="field">
+          <label for="chatInputSelector">Chat Input CSS Selector</label>
+          <div class="selector-row">
+            <input type="text" id="chatInputSelector" placeholder="div.ProseMirror">
+            <button type="button" class="pick-btn" data-field="chatInputSelector" title="Pick element from page">Pick</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="fileDropSelector">File Drop Target CSS Selector</label>
+          <div class="selector-row">
+            <input type="text" id="fileDropSelector" placeholder="div.ProseMirror">
+            <button type="button" class="pick-btn" data-field="fileDropSelector" title="Pick element from page">Pick</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Attachment Method</label>
+          <div class="radio-group">
+            <label><input type="radio" name="attachmentMethod" value="paste" checked> Paste</label>
+            <label><input type="radio" name="attachmentMethod" value="drop"> Drop</label>
+            <label><input type="radio" name="attachmentMethod" value="file-input"> File Input</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="autoSubmit">
+            Auto-submit after attaching
+          </label>
+        </div>
+
+        <div class="field" id="submitSelectorField" style="display: none;">
+          <label for="submitButtonSelector">Submit Button CSS Selector</label>
+          <div class="selector-row">
+            <input type="text" id="submitButtonSelector" placeholder="button[aria-label='Send message']">
+            <button type="button" class="pick-btn" data-field="submitButtonSelector" title="Pick element from page">Pick</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="pickerPlaceholder">Picker Placeholder Text</label>
+          <input type="text" id="pickerPlaceholder" placeholder="hello">
+          <div class="field-hint">Text typed into chat input during element picking to reveal the send button.</div>
+        </div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="save-btn" class="primary-btn">Save Settings</button>
+      <button id="reset-btn" class="secondary-btn">Reset to Default</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+  <script src="profiles.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
