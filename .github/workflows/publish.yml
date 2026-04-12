@@ -39,6 +39,8 @@ jobs:
         run: npm run build
 
       - name: Upload and publish to Chrome Web Store
+        id: cws-upload
+        continue-on-error: true
         run: |
           npx -y chrome-webstore-upload-cli@3 upload \
             --source "dist/page-to-ai-v${{ steps.version.outputs.manifest }}.zip" \
@@ -47,6 +49,10 @@ jobs:
             --client-secret "${{ secrets.CWS_CLIENT_SECRET }}" \
             --refresh-token "${{ secrets.CWS_REFRESH_TOKEN }}" \
             --auto-publish
+
+      - name: Warn if CWS upload failed
+        if: steps.cws-upload.outcome == 'failure'
+        run: echo "::warning::Chrome Web Store upload failed. The extension may be pending review. Upload manually or re-tag after review completes."
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
