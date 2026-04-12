@@ -108,6 +108,20 @@ async function createProfile(name) {
   return id;
 }
 
+async function copyProfile(sourceProfileId, newName) {
+  const { profiles } = await loadAllProfiles();
+  const source = profiles[sourceProfileId];
+  if (!source) return null;
+  const id = "custom_" + Date.now();
+  profiles[id] = {
+    name: newName,
+    builtIn: false,
+    settings: { ...source.settings },
+  };
+  await chrome.storage.sync.set({ profiles });
+  return id;
+}
+
 async function deleteProfile(profileId) {
   const data = await loadAllProfiles();
   if (data.profiles[profileId]?.builtIn) return false;

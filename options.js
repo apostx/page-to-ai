@@ -1,5 +1,5 @@
 /* global SETTINGS_DEFAULTS, BUILTIN_PROFILES, loadAllProfiles, saveProfile,
-   setActiveProfile, createProfile, deleteProfile, resetBuiltInProfile */
+   setActiveProfile, createProfile, copyProfile, deleteProfile, resetBuiltInProfile */
 
 const fields = {
   targetUrl: document.getElementById("targetUrl"),
@@ -114,9 +114,15 @@ document.getElementById("save-btn").addEventListener("click", async () => {
     return;
   }
 
+  // Request host permission for the target URL if not already granted
+  const granted = await ensureHostPermission(settings.targetUrl);
+  if (!granted) {
+    setStatus("Settings saved, but host permission was denied. The extension may not work with this URL until permission is granted.", "error");
+  }
+
   await saveProfile(currentActiveId, settings);
   currentProfiles[currentActiveId].settings = settings;
-  setStatus("Settings saved.", "success");
+  if (granted) setStatus("Settings saved.", "success");
   setTimeout(() => setStatus(""), 2000);
 });
 
@@ -147,6 +153,25 @@ document.getElementById("add-profile-btn").addEventListener("click", async () =>
   setStatus("Profile created. Fill in the settings and save.", "success");
 });
 
+// --- Copy Profile ---
+
+document.getElementById("copy-profile-btn").addEventListener("click", async () => {
+  const sourceProfile = currentProfiles[currentActiveId];
+  const defaultName = sourceProfile.name + " (copy)";
+  const name = prompt("Profile name:", defaultName);
+  if (!name || !name.trim()) return;
+
+  const newId = await copyProfile(currentActiveId, name.trim());
+  const data = await loadAllProfiles();
+  currentProfiles = data.profiles;
+  currentActiveId = newId;
+  await setActiveProfile(newId);
+  populateProfileDropdown();
+  loadProfileIntoForm(newId);
+  setStatus("Profile copied.", "success");
+  setTimeout(() => setStatus(""), 2000);
+});
+
 // --- Delete Profile ---
 
 deleteBtn.addEventListener("click", async () => {
@@ -169,6 +194,20 @@ deleteBtn.addEventListener("click", async () => {
 function setStatus(text, type = "") {
   statusEl.textContent = text;
   statusEl.style.color = type === "error" ? "#d93025" : type === "success" ? "#188038" : "#666";
+}
+
+// --- Host Permission ---
+
+async function ensureHostPermission(url) {
+  try {
+    const origin = new URL(url).origin + "/*";
+    const has = await chrome.permissions.contains({ origins: [origin] });
+    if (has) return true;
+    return await chrome.permissions.request({ origins: [origin] });
+  } catch {
+    // Invalid URL or permission API error
+    return false;
+  }
 }
 
 // --- Element Picker ---
