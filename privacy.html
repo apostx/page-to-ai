@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy &mdash; Page to AI</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.55; }
+    h1 { font-size: 26px; margin-bottom: 4px; }
+    h2 { font-size: 18px; margin-top: 24px; }
+    .updated { color: #666; margin-bottom: 24px; font-size: 13px; }
+    a { color: #6b4fbb; }
+    code { background: #f2eefa; padding: 1px 4px; border-radius: 3px; font-size: 13px; }
+    footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 13px; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy &mdash; Page to AI</h1>
+  <p class="updated">Last updated: 2026-04-18</p>
+
+  <p>
+    Page to AI is a Chrome extension that extracts the content of the active web page and forwards it &mdash; together with files you attach &mdash; to an AI chat service of your choice. This page explains exactly what data the extension handles.
+  </p>
+
+  <h2>What we collect</h2>
+  <p>
+    <strong>Nothing.</strong> Page to AI has no backend server. There is no analytics, telemetry, or data transmitted to any server operated by the developer.
+  </p>
+
+  <h2>What the extension reads</h2>
+  <p>When you click the Page to AI toolbar icon, the extension:</p>
+  <ol>
+    <li>Reads the text and/or HTML content of the currently active tab (only that tab, only at that moment).</li>
+    <li>Opens the AI chat URL you configured in the extension's settings.</li>
+    <li>Sends the extracted content, plus any files you chose to attach, into that AI chat tab along with a prompt template you configured.</li>
+  </ol>
+  <p>The extension only acts on an explicit user gesture. It does not run in the background, does not monitor your browsing, and does not read any tab you have not explicitly chosen to send.</p>
+
+  <h2>Google Drive access</h2>
+  <p>
+    If you choose to attach a file from Google Drive, the extension asks for the <code>https://www.googleapis.com/auth/drive.readonly</code> OAuth scope via Google's own consent screen. This access is used <strong>only</strong> to:
+  </p>
+  <ul>
+    <li>Let you browse your own Drive and files shared with you inside the extension's custom file picker.</li>
+    <li>Fetch the files you explicitly selected, at the moment you click "Send", and pass them into the AI chat tab you opened.</li>
+  </ul>
+  <p>
+    Drive content is <strong>never</strong> uploaded to, stored on, or transmitted to any server operated by the developer. The only Drive-related information retained locally (in Chrome's extension storage) is the file's ID, name, mime type, and size &mdash; so the extension can show your attachment list between sessions. You can remove entries at any time in the extension's Options page.
+  </p>
+
+  <h2>Local attachments</h2>
+  <p>
+    Files you upload from your computer are stored in <code>chrome.storage.local</code> on your own device and are never transmitted anywhere except into the AI chat tab you open, when you click Send.
+  </p>
+
+  <h2>What is stored locally</h2>
+  <p>
+    Your settings &mdash; target AI URL, prompt template, CSS selectors, profile presets, attachment references &mdash; are stored using Chrome's built-in storage APIs. Settings sync across your own Chrome installations via your Google account (<code>chrome.storage.sync</code>) the same way bookmarks do; binary attachment bytes stay on the device (<code>chrome.storage.local</code>). The developer has no access to this data.
+  </p>
+
+  <h2>Third parties</h2>
+  <p>
+    Page to AI sends extracted web page content and your selected attachments to <strong>the AI service URL you configured</strong> (e.g. claude.ai, chatgpt.com, gemini.google.com, or any other URL you set). That AI service is a third party, and its own privacy policy governs what it does with the content you send. Page to AI does not transmit data to anyone else.
+  </p>
+
+  <h2>Permissions explained</h2>
+  <ul>
+    <li><strong>activeTab</strong> &mdash; read the current tab when you click the toolbar icon.</li>
+    <li><strong>storage</strong> &mdash; save your settings and attachment references.</li>
+    <li><strong>scripting</strong> &mdash; inject the extraction and attachment scripts into pages.</li>
+    <li><strong>identity</strong> &mdash; sign in to Google Drive via Chrome's OAuth flow (only used when you add a Drive attachment).</li>
+    <li><strong>host permissions</strong> &mdash; required because the source page and target AI page can be on any domain you configure.</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>
+    Questions or concerns? Open an issue at <a href="https://github.com/apostx/page-to-ai/issues">github.com/apostx/page-to-ai/issues</a>.
+  </p>
+
+  <footer>
+    <a href="index.html">&larr; Back to Page to AI</a>
+  </footer>
+</body>
+</html>
