@@ -1,5 +1,9 @@
 /* global SETTINGS_DEFAULTS, BUILTIN_PROFILES, loadAllProfiles, saveProfile,
-   setActiveProfile, createProfile, copyProfile, deleteProfile, resetBuiltInProfile */
+   setActiveProfile, createProfile, copyProfile, deleteProfile, resetBuiltInProfile,
+   addLocalAttachment, removeLocalBlob,
+   getGlobalAttachments, setGlobalDriveAttachments, setGlobalLocalAttachments,
+   getProfileAttachments, setProfileDriveAttachments, setProfileLocalAttachments,
+   openDrivePicker */
 
 const fields = {
   targetUrl: document.getElementById("targetUrl"),
@@ -28,6 +32,8 @@ async function init() {
   currentActiveId = data.activeProfileId;
   populateProfileDropdown();
   loadProfileIntoForm(currentActiveId);
+  await renderGlobalAttachments();
+  await renderProfileAttachments();
 }
 
 init();
@@ -83,6 +89,7 @@ profileSelect.addEventListener("change", async () => {
   currentActiveId = profileSelect.value;
   await setActiveProfile(currentActiveId);
   loadProfileIntoForm(currentActiveId);
+  await renderProfileAttachments();
   setStatus("");
 });
 
@@ -324,3 +331,130 @@ async function switchBackToOptions() {
     }
   }
 }
+
+// --- Attachments ---
+
+const globalAttachmentsList = document.getElementById("globalAttachmentsList");
+const profileAttachmentsList = document.getElementById("profileAttachmentsList");
+const globalLocalInput = document.getElementById("globalLocalInput");
+const profileLocalInput = document.getElementById("profileLocalInput");
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function renderAttachmentList(container, drive, local, onRemove) {
+  container.innerHTML = "";
+  const entries = [
+    ...drive.map((a) => ({ ...a, source: "drive" })),
+    ...local.map((a) => ({ ...a, source: "local" })),
+  ];
+  for (const a of entries) {
+    const row = document.createElement("div");
+    row.className = "attachment-row";
+    row.innerHTML = `
+      <span class="attachment-badge ${a.source}">${a.source}</span>
+      <span class="attachment-name" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}</span>
+      <span class="attachment-size">${formatSize(a.size || 0)}</span>
+      <button type="button" class="attachment-remove" title="Remove">&times;</button>
+    `;
+    row.querySelector(".attachment-remove").addEventListener("click", () => onRemove(a));
+    container.appendChild(row);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+async function renderGlobalAttachments() {
+  const { drive, local } = await getGlobalAttachments();
+  renderAttachmentList(globalAttachmentsList, drive, local, async (a) => {
+    if (a.source === "local") {
+      const next = local.filter((x) => x.id !== a.id);
+      await setGlobalLocalAttachments(next);
+      await removeLocalBlob(a.id);
+    } else {
+      const next = drive.filter((x) => x.fileId !== a.fileId);
+      await setGlobalDriveAttachments(next);
+    }
+    await renderGlobalAttachments();
+  });
+}
+
+async function renderProfileAttachments() {
+  const { drive, local } = await getProfileAttachments(currentActiveId);
+  renderAttachmentList(profileAttachmentsList, drive, local, async (a) => {
+    if (a.source === "local") {
+      const next = local.filter((x) => x.id !== a.id);
+      await setProfileLocalAttachments(currentActiveId, next);
+      await removeLocalBlob(a.id);
+    } else {
+      const next = drive.filter((x) => x.fileId !== a.fileId);
+      await setProfileDriveAttachments(currentActiveId, next);
+    }
+    await renderProfileAttachments();
+  });
+}
+
+document.getElementById("add-global-local-btn").addEventListener("click", () => {
+  globalLocalInput.click();
+});
+
+document.getElementById("add-profile-local-btn").addEventListener("click", () => {
+  profileLocalInput.click();
+});
+
+globalLocalInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = "";
+  const ref = await addLocalAttachment(file);
+  const { local } = await getGlobalAttachments();
+  await setGlobalLocalAttachments([...local, ref]);
+  await renderGlobalAttachments();
+  setStatus("Local attachment added.", "success");
+  setTimeout(() => setStatus(""), 2000);
+});
+
+profileLocalInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = "";
+  const ref = await addLocalAttachment(file);
+  const { local } = await getProfileAttachments(currentActiveId);
+  await setProfileLocalAttachments(currentActiveId, [...local, ref]);
+  await renderProfileAttachments();
+  setStatus("Local attachment added.", "success");
+  setTimeout(() => setStatus(""), 2000);
+});
+
+document.getElementById("add-global-drive-btn").addEventListener("click", async () => {
+  try {
+    const picked = await openDrivePicker();
+    if (!picked) return;
+    const { drive } = await getGlobalAttachments();
+    await setGlobalDriveAttachments([...drive, picked]);
+    await renderGlobalAttachments();
+    setStatus("Drive attachment added.", "success");
+    setTimeout(() => setStatus(""), 2000);
+  } catch (err) {
+    setStatus("Drive picker failed: " + err.message, "error");
+  }
+});
+
+document.getElementById("add-profile-drive-btn").addEventListener("click", async () => {
+  try {
+    const picked = await openDrivePicker();
+    if (!picked) return;
+    const { drive } = await getProfileAttachments(currentActiveId);
+    await setProfileDriveAttachments(currentActiveId, [...drive, picked]);
+    await renderProfileAttachments();
+    setStatus("Drive attachment added.", "success");
+    setTimeout(() => setStatus(""), 2000);
+  } catch (err) {
+    setStatus("Drive picker failed: " + err.message, "error");
+  }
+});

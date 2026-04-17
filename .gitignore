@@ -1,3 +1,4 @@
 node_modules/
 package-lock.json
 dist/
+client_secret_*.json

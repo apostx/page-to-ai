@@ -217,3 +217,284 @@ summary {
   color: #188038;
   min-height: 18px;
 }
+
+.attachments-section {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.section-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.attachments-list {
+  margin: 8px 0;
+}
+
+.attachments-list:empty::before {
+  content: "No attachments";
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.attachment-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.attachment-badge.local {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.attachment-badge.drive {
+  background: #e6f4ea;
+  color: #188038;
+}
+
+.attachment-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-size {
+  color: #888;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.attachment-remove {
+  background: none;
+  border: none;
+  color: #d93025;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+
+.attachment-remove:hover {
+  color: #a50e0e;
+}
+
+.attachments-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.drive-browser-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drive-browser-modal {
+  width: min(600px, 90vw);
+  height: min(600px, 85vh);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.drive-browser-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.drive-browser-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.drive-browser-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  padding: 0 4px;
+}
+
+.drive-browser-close:hover {
+  color: #1a1a1a;
+}
+
+.drive-browser-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.drive-browser-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #666;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.drive-browser-tab:hover {
+  color: #1a1a1a;
+}
+
+.drive-browser-tab.active {
+  color: #6b4fbb;
+  border-bottom-color: #6b4fbb;
+  font-weight: 500;
+}
+
+.drive-browser-breadcrumb {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #555;
+  border-bottom: 1px solid #e0e0e0;
+  min-height: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.drive-browser-crumb {
+  cursor: pointer;
+  color: #6b4fbb;
+}
+
+.drive-browser-crumb:hover {
+  text-decoration: underline;
+}
+
+.drive-browser-crumb-current {
+  color: #1a1a1a;
+  font-weight: 500;
+  cursor: default;
+}
+
+.drive-browser-crumb-current:hover {
+  text-decoration: none;
+}
+
+.drive-browser-crumb-sep {
+  margin: 0 6px;
+  color: #bbb;
+}
+
+.drive-browser-crumb-label {
+  font-style: italic;
+  color: #888;
+}
+
+.drive-browser-search {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.drive-browser-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.drive-browser-search-input:focus {
+  outline: none;
+  border-color: #6b4fbb;
+  box-shadow: 0 0 0 2px rgba(107, 79, 187, 0.15);
+}
+
+.drive-browser-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.drive-browser-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.drive-browser-row:hover {
+  background: #f0ebfa;
+}
+
+.drive-browser-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.drive-browser-icon-folder {
+  font-size: 14px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.drive-browser-row.is-folder .drive-browser-name {
+  font-weight: 500;
+}
+
+.drive-browser-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drive-browser-meta {
+  color: #888;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.drive-browser-status {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #888;
+  border-top: 1px solid #e0e0e0;
+  min-height: 16px;
+}

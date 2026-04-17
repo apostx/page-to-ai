@@ -1,4 +1,4 @@
-importScripts("profiles.js");
+importScripts("profiles.js", "attachments.js", "drive.js");
 
 // Top-level listener — survives service worker restarts
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
@@ -18,12 +18,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
 
     await chrome.tabs.sendMessage(tabId, {
       action: "attach-and-type",
-      content: pendingAttachment.content,
-      filename: pendingAttachment.filename,
+      attachments: pendingAttachment.attachments,
       prompt: pendingAttachment.prompt,
       fileDropSelector: pendingAttachment.fileDropSelector,
       chatInputSelector: pendingAttachment.chatInputSelector,
-      fileFormat: pendingAttachment.fileFormat,
       attachmentMethod: pendingAttachment.attachmentMethod,
       autoSubmit: pendingAttachment.autoSubmit,
       submitButtonSelector: pendingAttachment.submitButtonSelector,
@@ -43,6 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function handleExtractAndSend() {
+  const { activeProfileId } = await loadAllProfiles();
   const settings = await getActiveSettings();
 
   // Get the active tab
@@ -75,8 +74,57 @@ async function handleExtractAndSend() {
 
   const isHtml = settings.extractionMode === "full";
   const ext = isHtml ? "html" : "md";
-  const fileFormat = isHtml ? "html" : "markdown";
-  const filename = `page-content.${ext}`;
+  const pageMimeType = isHtml ? "text/html" : "text/markdown";
+  const pageFilename = `page-content.${ext}`;
+
+  // Gather user attachments (global + profile, drive + local)
+  const userAttachments = await resolveAttachmentsForSend(activeProfileId);
+
+  // Fetch Drive content for any drive-source attachments
+  const hasDrive = userAttachments.some((a) => a._needsDriveFetch);
+  const finalAttachments = [];
+  if (hasDrive) {
+    let token;
+    try {
+      token = await getDriveAuthToken(false);
+    } catch {
+      // Interactive fallback — the user may need to consent
+      try {
+        token = await getDriveAuthToken(true);
+      } catch (err) {
+        console.error("Page to AI: Drive auth failed", err);
+      }
+    }
+    const sizeUpdates = [];
+    for (const a of userAttachments) {
+      if (a._needsDriveFetch) {
+        if (!token) continue;
+        try {
+          const fetched = await fetchDriveFile(token, a.fileId, a.mimeType);
+          finalAttachments.push({ name: a.name, mimeType: fetched.mimeType, data: fetched.data });
+          sizeUpdates.push({ scope: a.scope, fileId: a.fileId, size: fetched.size });
+        } catch (err) {
+          console.error("Page to AI: failed to fetch Drive file", a, err);
+        }
+      } else {
+        finalAttachments.push(a);
+      }
+    }
+    if (sizeUpdates.length) {
+      updateDriveAttachmentSizes(activeProfileId, sizeUpdates).catch((err) =>
+        console.error("Page to AI: failed to update Drive sizes", err)
+      );
+    }
+  } else {
+    for (const a of userAttachments) finalAttachments.push(a);
+  }
+
+  // Extracted page goes LAST (closest to prompt)
+  finalAttachments.push({
+    name: pageFilename,
+    mimeType: pageMimeType,
+    data: utf8ToBase64(extractedContent),
+  });
 
   // Open the AI page first to get the tabId
   const newTab = await chrome.tabs.create({ url: settings.targetUrl });
@@ -85,12 +133,10 @@ async function handleExtractAndSend() {
   await chrome.storage.session.set({
     pendingAttachment: {
       tabId: newTab.id,
-      content: extractedContent,
-      filename,
+      attachments: finalAttachments,
       prompt: settings.prompt,
       fileDropSelector: settings.fileDropSelector,
       chatInputSelector: settings.chatInputSelector,
-      fileFormat,
       attachmentMethod: settings.attachmentMethod,
       autoSubmit: settings.autoSubmit,
       submitButtonSelector: settings.submitButtonSelector,
@@ -98,4 +144,13 @@ async function handleExtractAndSend() {
   });
 
   return { success: true };
+}
+
+function utf8ToBase64(str) {
+  // Encode a string (extracted HTML/markdown) as base64 so it shares the
+  // same wire format as file-based attachments.
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }

@@ -9,6 +9,17 @@
   <div class="container">
     <h1>Page to AI Settings</h1>
 
+    <div class="attachments-section">
+      <label class="section-label">Global Attachments</label>
+      <div class="field-hint">Sent with every profile. Local files stay on this machine; Drive files sync.</div>
+      <div id="globalAttachmentsList" class="attachments-list"></div>
+      <div class="attachments-actions">
+        <button type="button" id="add-global-local-btn" class="icon-btn">Add local file</button>
+        <button type="button" id="add-global-drive-btn" class="icon-btn">Add from Drive</button>
+        <input type="file" id="globalLocalInput" style="display:none">
+      </div>
+    </div>
+
     <div class="profile-bar">
       <label for="profileSelect">Profile</label>
       <select id="profileSelect"></select>
@@ -32,6 +43,17 @@
       <div class="radio-group">
         <label><input type="radio" name="extractionMode" value="full" checked> Full Page</label>
         <label><input type="radio" name="extractionMode" value="smart"> Smart (article only)</label>
+      </div>
+    </div>
+
+    <div class="attachments-section">
+      <label class="section-label">Profile Attachments</label>
+      <div class="field-hint">Sent only with this profile. Local files stay on this machine; Drive files sync.</div>
+      <div id="profileAttachmentsList" class="attachments-list"></div>
+      <div class="attachments-actions">
+        <button type="button" id="add-profile-local-btn" class="icon-btn">Add local file</button>
+        <button type="button" id="add-profile-drive-btn" class="icon-btn">Add from Drive</button>
+        <input type="file" id="profileLocalInput" style="display:none">
       </div>
     </div>
 
@@ -94,6 +116,8 @@
     <div id="status" class="status"></div>
   </div>
   <script src="profiles.js"></script>
+  <script src="attachments.js"></script>
+  <script src="drive.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

@@ -1,14 +1,20 @@
 {
   "manifest_version": 3,
   "name": "Page to AI",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "Extract webpage content and send it to an AI chat as a file attachment",
-  "permissions": ["activeTab", "storage", "scripting"],
+  "permissions": ["activeTab", "storage", "scripting", "identity"],
   "host_permissions": [
     "https://claude.ai/*",
-    "https://chatgpt.com/*"
+    "https://chatgpt.com/*",
+    "https://www.googleapis.com/*",
+    "https://oauth2.googleapis.com/*"
   ],
   "optional_host_permissions": ["<all_urls>"],
+  "oauth2": {
+    "client_id": "649364188843-as2u686f7vfn6r9237i724c0kq6vj7dn.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/drive.readonly"]
+  },
   "background": {
     "service_worker": "background.js"
   },

@@ -13,6 +13,8 @@ const include = [
   "manifest.json",
   "background.js",
   "profiles.js",
+  "attachments.js",
+  "drive.js",
   "content-extract.js",
   "content-attach.js",
   "content-picker.js",

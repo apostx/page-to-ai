@@ -31,33 +31,33 @@
 
   async function performAttachment(config) {
     const {
-      content,
-      filename,
+      attachments,
       prompt,
       fileDropSelector,
       chatInputSelector,
-      fileFormat,
       attachmentMethod,
     } = config;
 
-    const mimeTypes = { html: "text/html", markdown: "text/markdown" };
-    const mimeType = mimeTypes[fileFormat] || "text/plain";
-    const file = new File([content], filename, {
-      type: mimeType,
-      lastModified: Date.now(),
-    });
-
     try {
-      // Step 1: Attach the file
       const dropTarget = await waitForElement(fileDropSelector);
-      await attachFile(file, dropTarget, attachmentMethod);
 
-      // Step 2: Wait for the file to be processed, then type the prompt
+      // Attach each file in order. Wait between attachments so the target
+      // AI page can process the upload before we push the next one.
+      for (let i = 0; i < attachments.length; i++) {
+        const a = attachments[i];
+        const file = base64ToFile(a.data, a.name, a.mimeType);
+        await attachFile(file, dropTarget, attachmentMethod);
+        if (i < attachments.length - 1) {
+          await delay(1500);
+        }
+      }
+
+      // Wait for the last file to be processed, then type the prompt
       await delay(1000);
       const inputTarget = await waitForElement(chatInputSelector);
       await typePrompt(inputTarget, prompt);
 
-      // Step 3: Optionally click the submit button once upload is complete
+      // Optionally click the submit button once upload is complete
       if (config.autoSubmit && config.submitButtonSelector) {
         const submitBtn = await waitForEnabledElement(config.submitButtonSelector);
         submitBtn.click();
@@ -65,6 +65,16 @@
     } catch (err) {
       console.error("Page to AI: attachment failed", err);
     }
+  }
+
+  function base64ToFile(b64, name, mimeType) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new File([bytes], name, {
+      type: mimeType || "application/octet-stream",
+      lastModified: Date.now(),
+    });
   }
 
   async function attachFile(file, target, method) {

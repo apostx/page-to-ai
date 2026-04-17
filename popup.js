@@ -34,6 +34,26 @@ async function initProfiles() {
 
 initProfiles();
 
+async function checkActiveTab() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = tab?.url || "";
+    if (!isExtractableUrl(url)) {
+      sendBtn.disabled = true;
+      setStatus("This page can't be extracted (browser-internal URL).", "error");
+    }
+  } catch {
+    // If we can't read the tab URL, leave the button enabled; backend will report errors.
+  }
+}
+
+function isExtractableUrl(url) {
+  if (!url) return false;
+  return /^https?:\/\//i.test(url);
+}
+
+checkActiveTab();
+
 profileSelect.addEventListener("change", async () => {
   await setActiveProfile(profileSelect.value);
 });
