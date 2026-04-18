@@ -148,8 +148,22 @@ async function resolveAttachmentsForSend(profileId) {
     ...p.local.map((a) => ({ ...a, source: "local", scope: "profile" })),
   ];
 
-  const resolved = [];
+  // Dedupe — a file in both global and profile counts once. Drive is keyed by
+  // fileId; local is keyed by name+size+mimeType so a re-upload of the same
+  // file also collapses. Global wins because it iterates first.
+  const seen = new Set();
+  const deduped = [];
   for (const entry of ordered) {
+    const key = entry.source === "drive"
+      ? `drive:${entry.fileId}`
+      : `local:${entry.name}|${entry.size}|${entry.mimeType}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(entry);
+  }
+
+  const resolved = [];
+  for (const entry of deduped) {
     try {
       if (entry.source === "local") {
         const blob = await getLocalBlob(entry.id);

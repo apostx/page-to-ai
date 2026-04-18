@@ -407,12 +407,26 @@ document.getElementById("add-profile-local-btn").addEventListener("click", () =>
   profileLocalInput.click();
 });
 
+function isLocalDuplicate(list, file) {
+  const mimeType = file.type || "application/octet-stream";
+  return list.some((a) => a.name === file.name && a.size === file.size && a.mimeType === mimeType);
+}
+
+function isDriveDuplicate(list, picked) {
+  return list.some((a) => a.fileId === picked.fileId);
+}
+
 globalLocalInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   e.target.value = "";
-  const ref = await addLocalAttachment(file);
   const { local } = await getGlobalAttachments();
+  if (isLocalDuplicate(local, file)) {
+    setStatus("Already in global attachments.", "error");
+    setTimeout(() => setStatus(""), 2000);
+    return;
+  }
+  const ref = await addLocalAttachment(file);
   await setGlobalLocalAttachments([...local, ref]);
   await renderGlobalAttachments();
   setStatus("Local attachment added.", "success");
@@ -423,8 +437,13 @@ profileLocalInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   e.target.value = "";
-  const ref = await addLocalAttachment(file);
   const { local } = await getProfileAttachments(currentActiveId);
+  if (isLocalDuplicate(local, file)) {
+    setStatus("Already in profile attachments.", "error");
+    setTimeout(() => setStatus(""), 2000);
+    return;
+  }
+  const ref = await addLocalAttachment(file);
   await setProfileLocalAttachments(currentActiveId, [...local, ref]);
   await renderProfileAttachments();
   setStatus("Local attachment added.", "success");
@@ -436,6 +455,11 @@ document.getElementById("add-global-drive-btn").addEventListener("click", async 
     const picked = await openDrivePicker();
     if (!picked) return;
     const { drive } = await getGlobalAttachments();
+    if (isDriveDuplicate(drive, picked)) {
+      setStatus("Already in global attachments.", "error");
+      setTimeout(() => setStatus(""), 2000);
+      return;
+    }
     await setGlobalDriveAttachments([...drive, picked]);
     await renderGlobalAttachments();
     setStatus("Drive attachment added.", "success");
@@ -450,6 +474,11 @@ document.getElementById("add-profile-drive-btn").addEventListener("click", async
     const picked = await openDrivePicker();
     if (!picked) return;
     const { drive } = await getProfileAttachments(currentActiveId);
+    if (isDriveDuplicate(drive, picked)) {
+      setStatus("Already in profile attachments.", "error");
+      setTimeout(() => setStatus(""), 2000);
+      return;
+    }
     await setProfileDriveAttachments(currentActiveId, [...drive, picked]);
     await renderProfileAttachments();
     setStatus("Drive attachment added.", "success");
