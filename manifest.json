@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Page to AI",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "Extract webpage content and send it to an AI chat as a file attachment",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0PygwkUe7VdPTdXFbPMbINXayagCpbwaePDopwkl9ebbi74CFErHYehHxlcGYXI/Sv3lc9nfja2n+8INvvPLT3/GWWQr6oQIGNEjvxxKiVo4aFR9fjPWEw2dOPwFtxiKHcY1rkQNHyil53fFBTrSjoYyzzWlFZP3sRH40TFGUyhHaYKD0x2+OpPnOw6a5KQn1N9/kbNluhWqIkY3U5I0qrB6xJk8ZbgFOi74usMY7zNlbuQ8HaWryhEL1L02lWA/XRXGWa9b/Lyi9QqGE7yLvm5+tJ41tDrRpof2HQfSzKvnH3N/Nc3T5OUmh/0wZHDVx6ucCQKQaI8tYBGVH/AtvwIDAQAB",
   "permissions": ["activeTab", "storage", "scripting", "identity"],

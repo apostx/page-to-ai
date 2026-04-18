@@ -41,18 +41,12 @@
     try {
       const dropTarget = await waitForElement(fileDropSelector);
 
-      // Attach each file in order. Wait between attachments so the target
-      // AI page can process the upload before we push the next one.
-      for (let i = 0; i < attachments.length; i++) {
-        const a = attachments[i];
-        const file = base64ToFile(a.data, a.name, a.mimeType);
-        await attachFile(file, dropTarget, attachmentMethod);
-        if (i < attachments.length - 1) {
-          await delay(1500);
-        }
+      const files = attachments.map((a) => base64ToFile(a.data, a.name, a.mimeType));
+      if (files.length) {
+        await attachFiles(files, dropTarget, attachmentMethod);
       }
 
-      // Wait for the last file to be processed, then type the prompt
+      // Give the page a moment to ingest the upload, then type the prompt
       await delay(1000);
       const inputTarget = await waitForElement(chatInputSelector);
       await typePrompt(inputTarget, prompt);
@@ -77,27 +71,32 @@
     });
   }
 
-  async function attachFile(file, target, method) {
+  async function attachFiles(files, target, method) {
     target.focus();
 
     switch (method) {
       case "paste":
-        attachViaPaste(file, target);
+        attachViaPaste(files, target);
         break;
       case "drop":
-        attachViaDrop(file, target);
+        attachViaDrop(files, target);
         break;
       case "file-input":
-        attachViaFileInput(file, target);
+        attachViaFileInput(files, target);
         break;
       default:
-        attachViaPaste(file, target);
+        attachViaPaste(files, target);
     }
   }
 
-  function attachViaPaste(file, target) {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
+  function buildDataTransfer(files) {
+    const dt = new DataTransfer();
+    for (const f of files) dt.items.add(f);
+    return dt;
+  }
+
+  function attachViaPaste(files, target) {
+    const dataTransfer = buildDataTransfer(files);
 
     const pasteEvent = new ClipboardEvent("paste", {
       bubbles: true,
@@ -108,20 +107,22 @@
     target.dispatchEvent(pasteEvent);
   }
 
-  function attachViaDrop(file, target) {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
+  function attachViaDrop(files, target) {
+    const dataTransfer = buildDataTransfer(files);
 
     const eventInit = { bubbles: true, cancelable: true, dataTransfer };
 
-    target.dispatchEvent(new DragEvent("dragenter", eventInit));
+    // Skip dragenter on purpose — many hosts (e.g. ChatGPT) show a
+    // page-level drop overlay tied to a dragenter/dragleave counter that
+    // can't be reliably balanced from synthetic events. dragover + drop
+    // is enough for the host's drop handler to attach the files, and
+    // without dragenter no overlay ever appears.
     target.dispatchEvent(new DragEvent("dragover", eventInit));
     target.dispatchEvent(new DragEvent("drop", eventInit));
   }
 
-  function attachViaFileInput(file, target) {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
+  function attachViaFileInput(files, target) {
+    const dataTransfer = buildDataTransfer(files);
 
     target.files = dataTransfer.files;
     target.dispatchEvent(new Event("change", { bubbles: true }));

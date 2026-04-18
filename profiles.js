@@ -2,7 +2,14 @@
 
 const SETTINGS_DEFAULTS = {
   targetUrl: "",
-  prompt: "create a targeted cv for this job (get_cv_instructions on mcp)",
+  prompt: `Create a tailored CV for the role described in this conversation. If a CV or work-history document is attached, treat it as the source of truth for my experience — do not invent roles, dates, or achievements; ask me for anything that's missing.
+
+The CV must be:
+- ATS-friendly: standard section order (Summary, Skills, Experience, Education), no tables/columns/images/headers/footers, common fonts, and keywords from the job description woven in naturally.
+- Recruiter-friendly: scannable in 30 seconds, strong opening summary, quantified bullet points (action + result + scale).
+- Credible to a subject-matter expert reviewing after the recruiter pass: specific tools, technologies, and outcomes — no buzzwords or vague claims.
+
+Prefer the Europass structure where it fits, but clarity wins over rigid adherence. Deliver the result as a PDF; if PDF generation isn't available, return clean Markdown I can convert.`,
   chatInputSelector: "",
   fileDropSelector: "",
   attachmentMethod: "paste",
@@ -33,6 +40,7 @@ const BUILTIN_PROFILES = {
       chatInputSelector: "#prompt-textarea",
       fileDropSelector: "#prompt-textarea",
       submitButtonSelector: "button[data-testid='send-button']",
+      attachmentMethod: "drop",
     },
   },
   gemini: {
