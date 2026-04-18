@@ -8,6 +8,7 @@
   "host_permissions": [
     "https://claude.ai/*",
     "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
     "https://www.googleapis.com/*",
     "https://oauth2.googleapis.com/*"
   ],

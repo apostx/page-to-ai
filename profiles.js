@@ -35,6 +35,17 @@ const BUILTIN_PROFILES = {
       submitButtonSelector: "button[data-testid='send-button']",
     },
   },
+  gemini: {
+    name: "Gemini",
+    builtIn: true,
+    settings: {
+      ...SETTINGS_DEFAULTS,
+      targetUrl: "https://gemini.google.com/app",
+      chatInputSelector: "rich-textarea .ql-editor",
+      fileDropSelector: "rich-textarea .ql-editor",
+      submitButtonSelector: "button.send-button",
+    },
+  },
 };
 
 const DEFAULT_ACTIVE_PROFILE = "claude";
@@ -47,6 +58,20 @@ async function loadAllProfiles() {
 
   if (!data.profiles) {
     data.profiles = await migrateFromFlat();
+  }
+
+  // Backfill built-in profiles added in newer versions so existing
+  // installs pick them up on update without touching custom profiles
+  // or user-edited built-ins.
+  let added = false;
+  for (const [id, builtin] of Object.entries(BUILTIN_PROFILES)) {
+    if (!data.profiles[id]) {
+      data.profiles[id] = JSON.parse(JSON.stringify(builtin));
+      added = true;
+    }
+  }
+  if (added) {
+    await chrome.storage.sync.set({ profiles: data.profiles });
   }
 
   return data;
