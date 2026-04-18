@@ -26,6 +26,52 @@ async function revokeDriveAuthToken(token) {
   });
 }
 
+async function getDriveUserInfo(token) {
+  const resp = await fetch(
+    "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress,displayName,photoLink)",
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!resp.ok) throw new Error(`Drive about ${resp.status}`);
+  const data = await resp.json();
+  const u = data.user || {};
+  return {
+    email: u.emailAddress || "",
+    displayName: u.displayName || "",
+    photoLink: u.photoLink || "",
+  };
+}
+
+async function getCachedDriveAccount() {
+  const { driveAccount = null } = await chrome.storage.local.get("driveAccount");
+  return driveAccount;
+}
+
+async function setCachedDriveAccount(info) {
+  await chrome.storage.local.set({ driveAccount: info });
+}
+
+async function clearCachedDriveAccount() {
+  await chrome.storage.local.remove("driveAccount");
+}
+
+async function ensureDriveAccountCached(token) {
+  const cached = await getCachedDriveAccount();
+  if (cached) return cached;
+  const info = await getDriveUserInfo(token);
+  await setCachedDriveAccount(info);
+  return info;
+}
+
+async function signOutDrive() {
+  try {
+    const token = await getDriveAuthToken(false);
+    if (token) await revokeDriveAuthToken(token);
+  } catch {
+    // No cached token to revoke — cache clear below is the source of truth.
+  }
+  await clearCachedDriveAccount();
+}
+
 // Opens a custom Drive file browser (modal in the host page, using the Drive
 // REST API). Resolves with the picked file ref { fileId, name, mimeType, size }
 // or null if cancelled.

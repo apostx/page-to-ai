@@ -10,6 +10,15 @@
     <h1>Page to AI Settings</h1>
 
     <div class="attachments-section">
+      <label class="section-label">Google Drive Account</label>
+      <div class="field-hint">Used to fetch Drive attachments. Sign in once; the same account is used for every profile.</div>
+      <div id="driveAccountRow" class="drive-account-row" hidden>
+        <span class="drive-account-status"></span>
+        <button type="button" id="drive-account-action-btn" class="icon-btn"></button>
+      </div>
+    </div>
+
+    <div class="attachments-section">
       <label class="section-label">Global Attachments</label>
       <div class="field-hint">Sent with every profile. Local files stay on this machine; Drive files sync.</div>
       <div id="globalAttachmentsList" class="attachments-list"></div>

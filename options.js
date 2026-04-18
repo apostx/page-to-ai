@@ -3,7 +3,8 @@
    addLocalAttachment, removeLocalBlob,
    getGlobalAttachments, setGlobalDriveAttachments, setGlobalLocalAttachments,
    getProfileAttachments, setProfileDriveAttachments, setProfileLocalAttachments,
-   openDrivePicker */
+   openDrivePicker, getDriveAuthToken, signOutDrive,
+   ensureDriveAccountCached, clearCachedDriveAccount */
 
 const fields = {
   targetUrl: document.getElementById("targetUrl"),
@@ -34,6 +35,7 @@ async function init() {
   loadProfileIntoForm(currentActiveId);
   await renderGlobalAttachments();
   await renderProfileAttachments();
+  await renderDriveAccount();
 }
 
 init();
@@ -462,6 +464,7 @@ document.getElementById("add-global-drive-btn").addEventListener("click", async 
     }
     await setGlobalDriveAttachments([...drive, picked]);
     await renderGlobalAttachments();
+    await renderDriveAccount();
     setStatus("Drive attachment added.", "success");
     setTimeout(() => setStatus(""), 2000);
   } catch (err) {
@@ -481,9 +484,67 @@ document.getElementById("add-profile-drive-btn").addEventListener("click", async
     }
     await setProfileDriveAttachments(currentActiveId, [...drive, picked]);
     await renderProfileAttachments();
+    await renderDriveAccount();
     setStatus("Drive attachment added.", "success");
     setTimeout(() => setStatus(""), 2000);
   } catch (err) {
     setStatus("Drive picker failed: " + err.message, "error");
+  }
+});
+
+// --- Drive Account ---
+
+const driveAccountRow = document.getElementById("driveAccountRow");
+const driveAccountStatus = driveAccountRow.querySelector(".drive-account-status");
+const driveAccountActionBtn = document.getElementById("drive-account-action-btn");
+let driveAccountConnected = false;
+
+async function renderDriveAccount() {
+  let token = null;
+  try {
+    token = await getDriveAuthToken(false);
+  } catch {
+    token = null;
+  }
+
+  if (!token) {
+    driveAccountConnected = false;
+    await clearCachedDriveAccount();
+    driveAccountStatus.textContent = "Not connected to Google Drive.";
+    driveAccountActionBtn.textContent = "Connect";
+    driveAccountRow.hidden = false;
+    return;
+  }
+
+  try {
+    const info = await ensureDriveAccountCached(token);
+    driveAccountConnected = true;
+    driveAccountStatus.textContent = "Connected as " + (info.email || info.displayName || "Google account");
+    driveAccountActionBtn.textContent = "Disconnect";
+  } catch (err) {
+    driveAccountConnected = true;
+    driveAccountStatus.textContent = "Connected to Google Drive (" + err.message + ")";
+    driveAccountActionBtn.textContent = "Disconnect";
+  }
+  driveAccountRow.hidden = false;
+}
+
+driveAccountActionBtn.addEventListener("click", async () => {
+  driveAccountActionBtn.disabled = true;
+  try {
+    if (driveAccountConnected) {
+      await signOutDrive();
+      setStatus("Disconnected from Google Drive.", "success");
+    } else {
+      const token = await getDriveAuthToken(true);
+      await ensureDriveAccountCached(token);
+      setStatus("Connected to Google Drive.", "success");
+    }
+    setTimeout(() => setStatus(""), 2000);
+  } catch (err) {
+    setStatus("Drive: " + err.message, "error");
+  } finally {
+    driveAccountActionBtn.disabled = false;
+    await renderDriveAccount();
   }
 });
