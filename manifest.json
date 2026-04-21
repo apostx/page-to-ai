@@ -13,10 +13,6 @@
     "https://oauth2.googleapis.com/*"
   ],
   "optional_host_permissions": ["<all_urls>"],
-  "oauth2": {
-    "client_id": "649364188843-as2u686f7vfn6r9237i724c0kq6vj7dn.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/drive.readonly"]
-  },
   "background": {
     "service_worker": "background.js"
   },

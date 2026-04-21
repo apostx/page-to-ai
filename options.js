@@ -3,7 +3,7 @@
    addLocalAttachment, removeLocalBlob,
    getGlobalAttachments, setGlobalDriveAttachments, setGlobalLocalAttachments,
    getProfileAttachments, setProfileDriveAttachments, setProfileLocalAttachments,
-   openDrivePicker, getDriveAuthToken, signOutDrive,
+   openDrivePicker, getDriveAuthToken, signInDriveWithPicker, signOutDrive,
    ensureDriveAccountCached, clearCachedDriveAccount */
 
 const fields = {
@@ -536,7 +536,7 @@ driveAccountActionBtn.addEventListener("click", async () => {
       await signOutDrive();
       setStatus("Disconnected from Google Drive.", "success");
     } else {
-      const token = await getDriveAuthToken(true);
+      const token = await signInDriveWithPicker();
       await ensureDriveAccountCached(token);
       setStatus("Connected to Google Drive.", "success");
     }
@@ -546,5 +546,7 @@ driveAccountActionBtn.addEventListener("click", async () => {
   } finally {
     driveAccountActionBtn.disabled = false;
     await renderDriveAccount();
+    await renderGlobalAttachments();
+    await renderProfileAttachments();
   }
 });

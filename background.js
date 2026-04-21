@@ -96,6 +96,7 @@ async function handleExtractAndSend() {
       }
     }
     const sizeUpdates = [];
+    const staleRemovals = [];
     for (const a of userAttachments) {
       if (a._needsDriveFetch) {
         if (!token) continue;
@@ -105,6 +106,9 @@ async function handleExtractAndSend() {
           sizeUpdates.push({ scope: a.scope, fileId: a.fileId, size: fetched.size });
         } catch (err) {
           console.error("Page to AI: failed to fetch Drive file", a, err);
+          if (err.status === 404 || err.status === 403) {
+            staleRemovals.push({ scope: a.scope, fileId: a.fileId });
+          }
         }
       } else {
         finalAttachments.push(a);
@@ -113,6 +117,11 @@ async function handleExtractAndSend() {
     if (sizeUpdates.length) {
       updateDriveAttachmentSizes(activeProfileId, sizeUpdates).catch((err) =>
         console.error("Page to AI: failed to update Drive sizes", err)
+      );
+    }
+    if (staleRemovals.length) {
+      removeDriveAttachments(activeProfileId, staleRemovals).catch((err) =>
+        console.error("Page to AI: failed to remove stale Drive refs", err)
       );
     }
   } else {

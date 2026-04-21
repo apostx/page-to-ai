@@ -135,6 +135,79 @@ async function updateDriveAttachmentSizes(profileId, updates) {
   }
 }
 
+async function removeDriveAttachments(profileId, removals) {
+  // removals: [{ scope, fileId }] — drops refs whose fileId is no longer
+  // fetchable (404/403 at send time).
+  const globalRemoves = new Set();
+  const profileRemoves = new Set();
+  for (const r of removals) {
+    (r.scope === "global" ? globalRemoves : profileRemoves).add(r.fileId);
+  }
+
+  if (globalRemoves.size) {
+    const { globalDriveAttachments = [] } = await chrome.storage.sync.get({ globalDriveAttachments: [] });
+    const next = globalDriveAttachments.filter((a) => !globalRemoves.has(a.fileId));
+    if (next.length !== globalDriveAttachments.length) {
+      await chrome.storage.sync.set({ globalDriveAttachments: next });
+    }
+  }
+
+  if (profileRemoves.size && profileId) {
+    const { profiles = {} } = await chrome.storage.sync.get({ profiles: {} });
+    const list = profiles[profileId]?.settings?.driveAttachments;
+    if (list) {
+      const next = list.filter((a) => !profileRemoves.has(a.fileId));
+      if (next.length !== list.length) {
+        profiles[profileId].settings.driveAttachments = next;
+        await chrome.storage.sync.set({ profiles });
+      }
+    }
+  }
+}
+
+async function removeLocalAttachments(profileId, removals) {
+  // removals: [{ scope, id }] — drops refs whose blob is no longer present
+  // (e.g. storage was cleared out of band).
+  const globalRemoves = new Set();
+  const profileRemoves = new Set();
+  for (const r of removals) {
+    (r.scope === "global" ? globalRemoves : profileRemoves).add(r.id);
+  }
+
+  if (globalRemoves.size) {
+    const { globalLocalAttachments = [] } = await chrome.storage.local.get({ globalLocalAttachments: [] });
+    const next = globalLocalAttachments.filter((a) => !globalRemoves.has(a.id));
+    if (next.length !== globalLocalAttachments.length) {
+      await chrome.storage.local.set({ globalLocalAttachments: next });
+    }
+  }
+
+  if (profileRemoves.size && profileId) {
+    const { profileLocalAttachments = {} } = await chrome.storage.local.get("profileLocalAttachments");
+    const list = profileLocalAttachments[profileId];
+    if (list) {
+      const next = list.filter((a) => !profileRemoves.has(a.id));
+      if (next.length !== list.length) {
+        profileLocalAttachments[profileId] = next;
+        await chrome.storage.local.set({ profileLocalAttachments });
+      }
+    }
+  }
+}
+
+async function clearAllDriveAttachments() {
+  const { profiles = {} } = await chrome.storage.sync.get({ profiles: {} });
+  for (const id of Object.keys(profiles)) {
+    if (profiles[id]?.settings?.driveAttachments) {
+      profiles[id].settings.driveAttachments = [];
+    }
+  }
+  await chrome.storage.sync.set({
+    globalDriveAttachments: [],
+    profiles,
+  });
+}
+
 // --- Resolve to files at send time ---
 
 async function resolveAttachmentsForSend(profileId) {
@@ -163,11 +236,15 @@ async function resolveAttachmentsForSend(profileId) {
   }
 
   const resolved = [];
+  const missingLocal = [];
   for (const entry of deduped) {
     try {
       if (entry.source === "local") {
         const blob = await getLocalBlob(entry.id);
-        if (!blob) continue;
+        if (!blob) {
+          missingLocal.push({ scope: entry.scope, id: entry.id });
+          continue;
+        }
         resolved.push({ name: entry.name, mimeType: entry.mimeType, data: blob.data });
       } else {
         // Drive — resolved in background.js where chrome.identity is available
@@ -182,6 +259,11 @@ async function resolveAttachmentsForSend(profileId) {
     } catch (err) {
       console.error("Page to AI: failed to resolve attachment", entry, err);
     }
+  }
+  if (missingLocal.length) {
+    removeLocalAttachments(profileId, missingLocal).catch((err) =>
+      console.error("Page to AI: failed to remove stale local refs", err)
+    );
   }
   return resolved;
 }

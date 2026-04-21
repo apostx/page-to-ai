@@ -1,29 +1,60 @@
 /* global chrome */
 
-// Google Drive integration. OAuth client is declared in manifest.oauth2.
-// See docs/DRIVE_SETUP.md.
+// Google Drive integration. OAuth uses chrome.identity.launchWebAuthFlow with
+// a Web application OAuth client so the Google account picker can be forced
+// via prompt=select_account. See docs/DRIVE_SETUP.md.
 
-async function getDriveAuthToken(interactive = true) {
+const OAUTH_CLIENT_ID = "649364188843-obguqpudjuk8dq8r1h335fpsl4jbribb.apps.googleusercontent.com";
+const OAUTH_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+const OAUTH_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+
+async function launchAuthFlow({ interactive, promptSelect }) {
+  const redirectUri = chrome.identity.getRedirectURL();
+  const params = new URLSearchParams({
+    client_id: OAUTH_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "token",
+    scope: OAUTH_SCOPE,
+    include_granted_scopes: "true",
+  });
+  if (promptSelect) params.set("prompt", "select_account");
+  const authUrl = `${OAUTH_AUTH_ENDPOINT}?${params.toString()}`;
+
   return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive }, (token) => {
-      if (chrome.runtime.lastError || !token) {
-        reject(new Error(chrome.runtime.lastError?.message || "No token"));
-      } else {
-        resolve(token);
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive }, (redirect) => {
+      if (chrome.runtime.lastError || !redirect) {
+        return reject(new Error(chrome.runtime.lastError?.message || "Auth cancelled"));
       }
+      const hash = new URL(redirect).hash.slice(1);
+      const result = new URLSearchParams(hash);
+      const accessToken = result.get("access_token");
+      if (!accessToken) return reject(new Error("No access_token in redirect"));
+      const expiresIn = Number(result.get("expires_in") || 3600);
+      resolve({ accessToken, expiresAt: Date.now() + expiresIn * 1000 - 30_000 });
     });
   });
 }
 
-async function revokeDriveAuthToken(token) {
-  try {
-    await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, { method: "POST" });
-  } catch {
-    // ignore
+async function getDriveAuthToken(interactive = true) {
+  const { driveToken = null } = await chrome.storage.local.get("driveToken");
+  if (driveToken && driveToken.expiresAt > Date.now()) return driveToken.accessToken;
+
+  if (!interactive) {
+    // launchWebAuthFlow has no reliable silent mode for installed-app clients;
+    // throw so callers can decide whether to fall back to interactive.
+    throw new Error("No cached token");
   }
-  return new Promise((resolve) => {
-    chrome.identity.removeCachedAuthToken({ token }, resolve);
-  });
+
+  const fresh = await launchAuthFlow({ interactive: true, promptSelect: false });
+  await chrome.storage.local.set({ driveToken: fresh });
+  return fresh.accessToken;
+}
+
+async function signInDriveWithPicker() {
+  const fresh = await launchAuthFlow({ interactive: true, promptSelect: true });
+  await chrome.storage.local.set({ driveToken: fresh });
+  await clearCachedDriveAccount();
+  return fresh.accessToken;
 }
 
 async function getDriveUserInfo(token) {
@@ -63,13 +94,17 @@ async function ensureDriveAccountCached(token) {
 }
 
 async function signOutDrive() {
-  try {
-    const token = await getDriveAuthToken(false);
-    if (token) await revokeDriveAuthToken(token);
-  } catch {
-    // No cached token to revoke — cache clear below is the source of truth.
+  const { driveToken = null } = await chrome.storage.local.get("driveToken");
+  if (driveToken?.accessToken) {
+    try {
+      await fetch(`https://oauth2.googleapis.com/revoke?token=${driveToken.accessToken}`, { method: "POST" });
+    } catch {
+      // ignore — local state below is the source of truth
+    }
   }
+  await chrome.storage.local.remove("driveToken");
   await clearCachedDriveAccount();
+  await clearAllDriveAttachments();
 }
 
 // Opens a custom Drive file browser (modal in the host page, using the Drive
@@ -83,7 +118,7 @@ async function openDrivePicker() {
   async function drvFetch(url) {
     let resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (resp.status === 401) {
-      await new Promise((r) => chrome.identity.removeCachedAuthToken({ token }, r));
+      await chrome.storage.local.remove("driveToken");
       token = await getDriveAuthToken(true);
       resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     }
@@ -314,7 +349,11 @@ async function fetchDriveFile(token, fileId, cachedMimeType) {
     `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
-  if (!metaResp.ok) throw new Error(`Drive metadata ${metaResp.status}`);
+  if (!metaResp.ok) {
+    const err = new Error(`Drive metadata ${metaResp.status}`);
+    err.status = metaResp.status;
+    throw err;
+  }
   const meta = await metaResp.json();
   const mimeType = meta.mimeType || cachedMimeType;
 
@@ -335,7 +374,11 @@ async function fetchDriveFile(token, fileId, cachedMimeType) {
   }
 
   const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!resp.ok) throw new Error(`Drive fetch ${resp.status}`);
+  if (!resp.ok) {
+    const err = new Error(`Drive fetch ${resp.status}`);
+    err.status = resp.status;
+    throw err;
+  }
   const buf = await resp.arrayBuffer();
   return { data: arrayBufferToBase64(buf), mimeType: finalMime, size: buf.byteLength };
 }
